@@ -161,3 +161,15 @@ if __name__ == "__main__":
     y_pred = np.array([12, 18, 29, 41, 49])
 
     metrics = evaluate_model(y_true, y_pred)
+
+    from sklearn.datasets import *
+from dtreeviz.trees import *
+from IPython.display import Image, display_svg, SVG
+     
+
+clas = tree.DecisionTreeClassifier()  
+iris = load_iris()
+
+X_train = iris.data
+y_train = iris.target
+clas.fit(X_train, y_train)
