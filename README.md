@@ -1,1 +1,1 @@
-# Vendor2
+# Machine Learning Study Code
