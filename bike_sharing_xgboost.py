@@ -140,6 +140,7 @@ param_grid = {
     'max_depth':[4,6,8],
     'learning_rate':[0.01,0.05,0.1],
     'subsample':[0.7,0.8,1.0]
+    
 }
 
 grid = GridSearchCV(XGBRegressor(random_state=42), param_grid, cv=3, scoring='r2')
