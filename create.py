@@ -1,0 +1,56 @@
+from fastapi import FastAPI, HTTPException, Path
+from pydantic import BaseModel
+from typing import List
+import uvicorn
+
+app = FastAPI(title="Dummy Data API", description="FastAPI app with dummy items data")
+
+# In-memory dummy data
+items_db: List[dict] = [
+    {"id": 1, "name": "Item 1", "price": 10.5, "description": "Dummy item 1"},
+    {"id": 2, "name": "Item 2", "price": 20.0, "description": "Dummy item 2"},
+    {"id": 3, "name": "Item 3", "price": 15.75, "description": "Dummy item 3"},
+    {"id": 4, "name": "Item 4", "price": 25.99, "description": "Dummy item 4"},
+    {"id": 5, "name": "Item 5", "price": 5.0, "description": "Dummy item 5"},
+    {"id": 6, "name": "Item 6", "price": 30.25, "description": "Dummy item 6"},
+    {"id": 7, "name": "Item 7", "price": 12.5, "description": "Dummy item 7"},
+    {"id": 8, "name": "Item 8", "price": 18.0, "description": "Dummy item 8"},
+    {"id": 9, "name": "Item 9", "price": 22.99, "description": "Dummy item 9"},
+    {"id": 10, "name": "Item 10", "price": 8.75, "description": "Dummy item 10"},
+]
+
+class ItemCreate(BaseModel):
+    name: str
+    price: float
+    description: str
+
+class Item(BaseModel):
+    id: int
+    name: str
+    price: float
+    description: str
+
+@app.get("/", tags=["root"])
+async def root():
+    return {"message": "Dummy Data API"}
+
+@app.get("/items/", response_model=List[Item], tags=["items"])
+async def get_items():
+    return items_db
+
+@app.get("/items/{item_id}", response_model=Item, tags=["items"])
+async def get_item(item_id: int = Path(..., description="ID of the item")):
+    for item in items_db:
+        if item["id"] == item_id:
+            return item
+    raise HTTPException(status_code=404, detail="Item not found")
+
+@app.post("/items/", response_model=Item, tags=["items"])
+async def create_item(item: ItemCreate):
+    new_id = max([i["id"] for i in items_db]) + 1 if items_db else 1
+    new_item = {"id": new_id, **item.dict()}
+    items_db.append(new_item)
+    return new_item
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="127.0.0.1", port=8001, reload=True)
