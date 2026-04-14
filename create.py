@@ -2,8 +2,13 @@ from fastapi import FastAPI, HTTPException, Path
 from pydantic import BaseModel
 from typing import List
 import uvicorn
+import numpy as np
+from sklearn.datasets import fetch_california_housing
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import r2_score
 
-app = FastAPI(title="Dummy Data API", description="FastAPI app with dummy items data")
+app = FastAPI(title="Dummy Data & House Price Prediction API", description="FastAPI app with dummy items and sklearn house price model")
 
 # In-memory dummy data
 items_db: List[dict] = [
@@ -30,6 +35,24 @@ class Item(BaseModel):
     price: float
     description: str
 
+# House Price Prediction Model
+housing = fetch_california_housing()
+X_train, X_test, y_train, y_test = train_test_split(housing.data, housing.target, test_size=0.2, random_state=42)
+model = RandomForestRegressor(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+train_r2 = r2_score(y_train, model.predict(X_train))
+test_r2 = r2_score(y_test, model.predict(X_test))
+
+class HouseFeatures(BaseModel):
+    medinc: float  # median income
+    houseage: float
+    averooms: float
+    avebedrms: float
+    population: float
+    aveoccup: float
+    latitude: float
+    longitude: float
+
 @app.get("/", tags=["root"])
 async def root():
     return {"message": "Dummy Data API"}
@@ -51,6 +74,22 @@ async def create_item(item: ItemCreate):
     new_item = {"id": new_id, **item.dict()}
     items_db.append(new_item)
     return new_item
+
+@app.get("/model_info", tags=["house_price"])
+async def model_info():
+    return {
+        "dataset": "California Housing",
+        "features": housing.feature_names.tolist(),
+        "train_r2": train_r2,
+        "test_r2": test_r2
+    }
+
+@app.post("/predict_house_price", tags=["house_price"])
+async def predict_house_price(features: HouseFeatures):
+    feature_array = np.array([[features.medinc, features.houseage, features.averooms, features.avebedrms,
+                               features.population, features.aveoccup, features.latitude, features.longitude]])
+    prediction = model.predict(feature_array)[0]
+    return {"predicted_price_usd": prediction * 100000}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8001, reload=True)
